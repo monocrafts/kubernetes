@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>YAML Repository</title>
+
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-hover: #21262d;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --muted: #8b949e;
+      --blue: #58a6ff;
+      --green: #3fb950;
+      --red: #ff7b72;
+      --yellow: #d29922;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    /* ------------------------------
+       Header
+    ------------------------------ */
+
+    header {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-secondary);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    header span {
+      margin-left: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* ------------------------------
+       Layout
+    ------------------------------ */
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      height: calc(100vh - 64px);
+    }
+
+    /* ------------------------------
+       Sidebar
+    ------------------------------ */
+
+    .sidebar {
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+      background: var(--bg-secondary);
+      padding: 16px 12px;
+    }
+
+    .sidebar-title {
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .category {
+      margin-bottom: 8px;
+    }
+
+    .category-header {
+      width: 100%;
+      padding: 9px 10px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .category-header:hover {
+      background: var(--bg-hover);
+    }
+
+    .category-header::before {
+      content: "▸";
+      display: inline-block;
+      width: 18px;
+      color: var(--muted);
+      transition: transform 0.15s;
+    }
+
+    .category.open .category-header::before {
+      transform: rotate(90deg);
+    }
+
+    .files {
+      display: none;
+      padding-left: 18px;
+    }
+
+    .category.open .files {
+      display: block;
+    }
+
+    .file {
+      display: block;
+      width: 100%;
+      padding: 8px 10px;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--muted);
+      text-align: left;
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .file:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    .file.active {
+      background: #1f6feb33;
+      color: var(--blue);
+    }
+
+    /* ------------------------------
+       Main
+    ------------------------------ */
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-secondary);
+    }
+
+    .filename {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      font-family:
+        "SFMono-Regular",
+        Consolas,
+        "Liberation Mono",
+        monospace;
+
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    button.action,
+    a.action {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-hover);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    button.action:hover,
+    a.action:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+
+    button.action:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    /* ------------------------------
+       YAML Viewer
+    ------------------------------ */
+
+    .viewer {
+      flex: 1;
+      overflow: auto;
+      background: #0d1117;
+    }
+
+    pre {
+      margin: 0;
+      padding: 20px 24px;
+
+      min-height: 100%;
+
+      font-family:
+        "SFMono-Regular",
+        Consolas,
+        "Liberation Mono",
+        monospace;
+
+      font-size: 13px;
+      line-height: 1.6;
+      tab-size: 2;
+      white-space: pre;
+    }
+
+    .placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      height: 100%;
+
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* ------------------------------
+       YAML syntax highlighting
+    ------------------------------ */
+
+    .yaml-comment {
+      color: #8b949e;
+    }
+
+    .yaml-key {
+      color: #79c0ff;
+    }
+
+    .yaml-string {
+      color: #a5d6ff;
+    }
+
+    .yaml-number {
+      color: #d2a8ff;
+    }
+
+    .yaml-bool {
+      color: #ff7b72;
+    }
+
+    .yaml-value {
+      color: #c9d1d9;
+    }
+
+    /* ------------------------------
+       Mobile
+    ------------------------------ */
+
+    @media (max-width: 700px) {
+
+      header {
+        padding: 0 16px;
+      }
+
+      header span {
+        display: none;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+
+      .sidebar {
+        max-height: 220px;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .main {
+        min-height: 0;
+      }
+
+      pre {
+        padding: 16px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>YAML Repository</h1>
+  <span>Kubernetes / Cassandra configuration</span>
+</header>
+
+<div class="layout">
+
+  <!-- ==========================
+       Sidebar
+  =========================== -->
+
+  <aside class="sidebar">
+
+    <div class="sidebar-title">
+      Files
+    </div>
+
+    <div id="file-tree"></div>
+
+  </aside>
+
+  <!-- ==========================
+       Main
+  =========================== -->
+
+  <main class="main">
+
+    <div class="toolbar">
+
+      <div id="filename" class="filename">
+        Select a YAML file
+      </div>
+
+      <div class="actions">
+
+        <button
+          id="copy-button"
+          class="action"
+          disabled
+        >
+          Copy
+        </button>
+
+        <a
+          id="download-button"
+          class="action"
+          href="#"
+          download
+          style="display:none"
+        >
+          Download
+        </a>
+
+      </div>
+
+    </div>
+
+    <div class="viewer">
+
+      <pre id="yaml-viewer"><div class="placeholder">Select a YAML file from the left.</div></pre>
+
+    </div>
+
+  </main>
+
+</div>
+
+<script>
+  /*
+   * ==========================================
+   * YAML FILE CONFIGURATION
+   * ==========================================
+   *
+   * Directory structure:
+   *
+   * yaml/
+   * ├── cassandra/
+   * │   ├── cassandra.yaml
+   * │   └── service.yaml
+   * ├── medusa/
+   * │   └── medusa.yaml
+   * ├── reaper/
+   * │   └── reaper.yaml
+   * └── operator/
+   *     └── cass-operator.yaml
+   *
+   * Add / remove files here when YAML files
+   * are added or removed.
+   */
+
+  const yamlFiles = {
+    cassandra: [
+      "yaml/cassandra/cassandra.yaml",
+      "yaml/cassandra/service.yaml"
+    ],
+
+    medusa: [
+      "yaml/medusa/medusa.yaml"
+    ],
+
+    reaper: [
+      "yaml/reaper/reaper.yaml"
+    ],
+
+    operator: [
+      "yaml/operator/cass-operator.yaml"
+    ]
+  };
+
+
+  const fileTree = document.getElementById("file-tree");
+  const viewer = document.getElementById("yaml-viewer");
+  const filenameElement = document.getElementById("filename");
+  const copyButton = document.getElementById("copy-button");
+  const downloadButton = document.getElementById("download-button");
+
+  let currentContent = "";
+  let currentFile = "";
+
+
+  /*
+   * ==========================================
+   * HTML ESCAPE
+   * ==========================================
+   */
+
+  function escapeHtml(text) {
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+
+  /*
+   * ==========================================
+   * YAML SYNTAX HIGHLIGHT
+   * ==========================================
+   *
+   * Lightweight highlighting.
+   * No external JavaScript library required.
+   */
+
+  function highlightYaml(text) {
+
+    const lines = text.split("\n");
+
+    return lines.map(line => {
+
+      let escaped = escapeHtml(line);
+
+      // Comment
+      if (/^\s*#/.test(line)) {
+        return `<span class="yaml-comment">${escaped}</span>`;
+      }
+
+      // key:
+      escaped = escaped.replace(
+        /^(\s*)([A-Za-z0-9_.\/-]+)(\s*:)/,
+        '$1<span class="yaml-key">$2</span>$3'
+      );
+
+      // Strings
+      escaped = escaped.replace(
+        /("[^"]*"|'[^']*')/g,
+        '<span class="yaml-string">$1</span>'
+      );
+
+      // Boolean / null
+      escaped = escaped.replace(
+        /(:\s*)(true|false|null)(\s*)$/i,
+        '$1<span class="yaml-bool">$2</span>$3'
+      );
+
+      // Number
+      escaped = escaped.replace(
+        /(:\s*)(-?\d+(?:\.\d+)?)(\s*)$/,
+        '$1<span class="yaml-number">$2</span>$3'
+      );
+
+      return escaped;
+
+    }).join("\n");
+  }
+
+
+  /*
+   * ==========================================
+   * FILE TREE
+   * ==========================================
+   */
+
+  function createFileTree() {
+
+    fileTree.innerHTML = "";
+
+    Object.entries(yamlFiles).forEach(
+      ([categoryName, files], categoryIndex) => {
+
+        const category = document.createElement("div");
+        category.className = "category";
+
+        // First category is open
+        if (categoryIndex === 0) {
+          category.classList.add("open");
+        }
+
+        const categoryHeader =
+          document.createElement("button");
+
+        categoryHeader.className = "category-header";
+        categoryHeader.textContent = categoryName;
+
+        categoryHeader.addEventListener(
+          "click",
+          () => {
+            category.classList.toggle("open");
+          }
+        );
+
+        const filesContainer =
+          document.createElement("div");
+
+        filesContainer.className = "files";
+
+        files.forEach(filePath => {
+
+          const fileButton =
+            document.createElement("button");
+
+          fileButton.className = "file";
+
+          // Show only filename
+          fileButton.textContent =
+            filePath.split("/").pop();
+
+          fileButton.title = filePath;
+
+          fileButton.addEventListener(
+            "click",
+            () => {
+              loadYaml(filePath, fileButton);
+            }
+          );
+
+          filesContainer.appendChild(fileButton);
+
+        });
+
+        category.appendChild(categoryHeader);
+        category.appendChild(filesContainer);
+
+        fileTree.appendChild(category);
+
+      }
+    );
+  }
+
+
+  /*
+   * ==========================================
+   * LOAD YAML
+   * ==========================================
+   */
+
+  async function loadYaml(filePath, button) {
+
+    try {
+
+      filenameElement.textContent = filePath;
+
+      viewer.innerHTML =
+        '<div class="placeholder">Loading...</div>';
+
+      const response =
+        await fetch(filePath, {
+          cache: "no-cache"
+        });
+
+      if (!response.ok) {
+        throw new Error(
+          `HTTP ${response.status} ${response.statusText}`
+        );
+      }
+
+      const text =
+        await response.text();
+
+      currentContent = text;
+      currentFile = filePath;
+
+      viewer.innerHTML =
+        `<code>${highlightYaml(text)}</code>`;
+
+      copyButton.disabled = false;
+
+      downloadButton.href = filePath;
+      downloadButton.download =
+        filePath.split("/").pop();
+
+      downloadButton.style.display =
+        "inline-block";
+
+      // Active state
+      document
+        .querySelectorAll(".file")
+        .forEach(element => {
+          element.classList.remove("active");
+        });
+
+      button.classList.add("active");
+
+      // Update URL
+      const url =
+        new URL(window.location);
+
+      url.searchParams.set(
+        "file",
+        filePath
+      );
+
+      window.history.replaceState(
+        {},
+        "",
+        url
+      );
+
+    } catch (error) {
+
+      viewer.innerHTML = "";
+
+      const errorElement =
+        document.createElement("div");
+
+      errorElement.className =
+        "placeholder";
+
+      errorElement.textContent =
+        `Failed to load: ${error.message}`;
+
+      viewer.appendChild(errorElement);
+
+      copyButton.disabled = true;
+      downloadButton.style.display = "none";
+    }
+  }
+
+
+  /*
+   * ==========================================
+   * COPY
+   * ==========================================
+   */
+
+  copyButton.addEventListener(
+    "click",
+    async () => {
+
+      if (!currentContent) {
+        return;
+      }
+
+      try {
+
+        await navigator.clipboard.writeText(
+          currentContent
+        );
+
+        const original =
+          copyButton.textContent;
+
+        copyButton.textContent =
+          "Copied!";
+
+        setTimeout(() => {
+          copyButton.textContent =
+            original;
+        }, 1500);
+
+      } catch (error) {
+
+        // Fallback
+        const textarea =
+          document.createElement("textarea");
+
+        textarea.value =
+          currentContent;
+
+        document.body.appendChild(textarea);
+
+        textarea.select();
+
+        document.execCommand("copy");
+
+        textarea.remove();
+
+        copyButton.textContent =
+          "Copied!";
+
+        setTimeout(() => {
+          copyButton.textContent =
+            "Copy";
+        }, 1500);
+      }
+    }
+  );
+
+
+  /*
+   * ==========================================
+   * INITIALIZE
+   * ==========================================
+   */
+
+  createFileTree();
+
+
+  /*
+   * ==========================================
+   * OPEN FILE FROM URL
+   * ==========================================
+   *
+   * Example:
+   *
+   * /?file=yaml/cassandra/cassandra.yaml
+   *
+   */
+
+  function openFileFromUrl() {
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const requestedFile =
+      params.get("file");
+
+    if (!requestedFile) {
+      return;
+    }
+
+    const buttons =
+      document.querySelectorAll(".file");
+
+    for (const button of buttons) {
+
+      if (button.title === requestedFile) {
+
+        // Open category
+        const category =
+          button.closest(".category");
+
+        if (category) {
+          category.classList.add("open");
+        }
+
+        loadYaml(
+          requestedFile,
+          button
+        );
+
+        return;
+      }
+    }
+  }
+
+  openFileFromUrl();
+
+</script>
+
+</body>
+</html>
+
