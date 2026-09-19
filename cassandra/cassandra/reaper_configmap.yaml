@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: cassandra-reaper
+  namespace: cassandra
+
+data:
+
+  cassandra-reaper.yaml: |
+
+    storageType: cassandra
+
+    cassandra:
+      type: basic
+
+      clusterName: reaper-backend
+
+      contactPoints:
+        - host: <DC1_CASSANDRA_VIP>
+          port: 9042
+
+      sessionKeyspaceName: reaper_db
+
+      loadBalancingPolicy:
+        type: default
+        localDataCenter: dc1
+
+      authProvider:
+        type: plain-text
+        username: reaper
+        password: ${REAPER_CASSANDRA_PASSWORD}
+
+    datacenterAvailability: ALL
+
+    enableDynamicSeedList: true
+
+    incrementalRepair: false
+
+    blacklistTwcsTables: true
+
+    repairIntensity: 1.0
+
+    repairManagerSchedulingIntervalSeconds: 30
+
+    jmxAuth:
+      username: reaper
+      password: ${REAPER_JMX_PASSWORD}
+
+    server:
+      type: default
+
+      applicationConnectors:
+        - type: http
+          port: 8080
+          bindHost: 0.0.0.0
+
+      adminConnectors:
+        - type: http
+          port: 8081
+          bindHost: 0.0.0.0

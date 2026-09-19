@@ -1,0 +1,118 @@
+apiVersion: cassandra.datastax.com/v1beta1
+kind: CassandraDatacenter
+
+metadata:
+  name: dc1
+  namespace: cassandra
+
+spec:
+  clusterName: cassandra-prod
+
+  serverType: cassandra
+  serverVersion: "5.0.9"
+
+  size: 5
+
+  managementApiAuth:
+    insecure: {}
+
+  networking:
+    hostNetwork: false
+
+  storageConfig:
+    cassandraDataVolumeClaimSpec:
+      storageClassName: <STORAGE_CLASS>
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 500Gi
+
+  resources:
+    requests:
+      cpu: "4"
+      memory: 16Gi
+    limits:
+      cpu: "4"
+      memory: 16Gi
+
+  racks:
+    - name: rack1
+
+  additionalSeeds:
+    - "<DC1_SEED_VIP>"
+    - "<DC2_SEED_VIP>"
+
+  config:
+    cassandra-yaml:
+      num_tokens: 16
+      authenticator: PasswordAuthenticator
+      authorizer: CassandraAuthorizer
+
+  podTemplateSpec:
+
+    spec:
+
+      initContainers:
+
+        # cass-operator が生成するinit containerを明示的に保持
+        - name: server-config-init-base
+
+        - name: server-config-init
+
+        # 生成済みcassandra.yamlを最後に変更
+        - name: vip-broadcast-patch
+          image: <YOUR_REGISTRY>/cassandra-vip-patch:1.0
+          imagePullPolicy: IfNotPresent
+
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+
+            - name: VIP
+              valueFrom:
+                configMapKeyRef:
+                  name: cassandra-pod-vips
+                  key: "$(POD_NAME)"
+
+          volumeMounts:
+            - name: server-config
+              mountPath: /config
+
+      containers:
+
+        # cassandra本体
+        - name: cassandra
+
+        # Medusa sidecar
+        - name: medusa
+          image: k8ssandra/medusa:0.30.0
+          imagePullPolicy: IfNotPresent
+
+          env:
+            - name: MEDUSA_MODE
+              value: "RUN"
+
+          volumeMounts:
+
+            - name: server-data
+              mountPath: /var/lib/cassandra
+
+            - name: medusa-config
+              mountPath: /etc/medusa
+
+            - name: medusa-credentials
+              mountPath: /etc/medusa-secrets
+              readOnly: true
+
+      volumes:
+
+        - name: medusa-config
+          configMap:
+            name: cassandra-medusa
+
+        - name: medusa-credentials
+          secret:
+            secretName: cassandra-medusa-credentials

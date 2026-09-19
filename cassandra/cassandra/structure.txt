@@ -1,0 +1,42 @@
+| 機能                  | 担当                             |
+| ------------------- | ------------------------------ |
+| Cassandra lifecycle | cass-operator 1.31.0           |
+| Cassandra 5.x       | cassandra management-api image |
+| Pod IP              | Kubernetes/OpenShift           |
+| Cassandra公開IP       | MetalLB VIP                    |
+| `listen_address`    | Pod IP                         |
+| `broadcast_address` | Pod VIP                        |
+| seed                | VIP                            |
+| backup              | Medusa sidecar                 |
+| Backup storage      | MinIO/S3 compatible            |
+| repair              | Reaper                         |
+| Reaper → Cassandra  | CQL + JMX                      |
+| hostNetwork         | **使わない**                       |
+| Submariner          | **使わない**                       |
+| Istio/Cilium        | **使わない**                       |
+
+cassandra/
+├── dc1/
+│   ├── cassandra-dc.yaml
+│   ├── vip-config.yaml
+│   ├── medusa-config.yaml
+│   └── medusa-secret.yaml
+│
+├── dc2/
+│   ├── cassandra-dc.yaml
+│   ├── vip-config.yaml
+│   ├── medusa-config.yaml
+│   └── medusa-secret.yaml
+│
+├── reaper/
+│   ├── config.yaml
+│   ├── secret.yaml
+│   ├── deployment.yaml
+│   └── service.yaml
+│
+└── images/
+    └── vip-patch/
+        └── Dockerfile
+
+listen_address: <Pod IP>
+broadcast_address: <Pod VIP>

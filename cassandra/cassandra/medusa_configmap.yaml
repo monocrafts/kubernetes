@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: cassandra-medusa
+  namespace: cassandra
+
+data:
+  medusa.ini: |
+    [cassandra]
+
+    check_running = nodetool version
+    use_sudo = False
+
+    [storage]
+
+    storage_provider = s3_compatible
+
+    bucket_name = cassandra-backup
+
+    prefix = cassandra-prod
+
+    endpoint = http://minio.minio.svc.cluster.local:9000
+
+    key_file = /etc/medusa-secrets/credentials
+
+    concurrent_transfers = 4
+
+    multi_part_upload_threshold = 100MB
+
+    [kubernetes]
+
+    enabled = 1
+
+    cassandra_url = http://127.0.0.1:8080/api/v0/ops/node/snapshots
+
+    use_mgmt_api = 1
